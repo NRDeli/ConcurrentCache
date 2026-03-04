@@ -22,7 +22,9 @@ public:
 
     int64_t ttl(const std::string &key);
 
-    size_t evict_if_needed(size_t &bytes_over);
+    size_t scan_expired(size_t limit);
+
+    size_t evict_if_needed(size_t &bytes_over); // returns BYTES freed
 
 private:
     std::unordered_map<std::string, Entry> map;

@@ -1,7 +1,11 @@
 #include "ConcurrentCache.h"
 
 ConcurrentCache::ConcurrentCache(size_t shard_count)
-    : shards(shard_count) {}
+    : shards(shard_count)
+{
+    running = true;
+    expirer_thread = std::thread(&ConcurrentCache::expirer_loop, this);
+}
 
 size_t ConcurrentCache::shard_for(const std::string &key)
 {
@@ -34,10 +38,16 @@ void ConcurrentCache::set(const std::string &key,
         size_t over = total_bytes - max_bytes;
 
         for (auto &shard : shards)
-            total_bytes -= shard.evict_if_needed(over);
+        {
+            size_t freed = shard.evict_if_needed(over);
+            if (freed > total_bytes)
+                total_bytes = 0;
+            else
+                total_bytes -= freed;
 
-        if (total_bytes < max_bytes)
-            total_bytes = max_bytes;
+            if (over == 0)
+                break;
+        }
     }
 }
 
@@ -58,4 +68,23 @@ int64_t ConcurrentCache::ttl(const std::string &key)
 {
 
     return shards[shard_for(key)].ttl(key);
+}
+
+void ConcurrentCache::expirer_loop()
+{
+    while (running)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        for (auto &shard : shards)
+            shard.scan_expired(20);
+    }
+}
+
+ConcurrentCache::~ConcurrentCache()
+{
+    running = false;
+
+    if (expirer_thread.joinable())
+        expirer_thread.join();
 }

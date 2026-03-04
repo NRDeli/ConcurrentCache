@@ -116,30 +116,63 @@ int64_t Shard::ttl(const std::string &key)
 
 size_t Shard::evict_if_needed(size_t &bytes_over)
 {
-
     std::lock_guard<std::mutex> lock(mtx);
 
-    size_t evicted = 0;
+    size_t freed = 0;
 
     while (bytes_over > 0 && !lru.empty())
     {
-
         std::string victim = lru.back();
         lru.pop_back();
 
         auto it = map.find(victim);
-
         if (it == map.end())
             continue;
 
-        bytes_over -= std::min(bytes_over, it->second.bytes);
+        const size_t victim_bytes = it->second.bytes;
 
-        bytes_used -= it->second.bytes;
+        // update accounting
+        bytes_used -= victim_bytes;
+        freed += victim_bytes;
+
+        // reduce the remaining "over" budget
+        if (victim_bytes >= bytes_over)
+            bytes_over = 0;
+        else
+            bytes_over -= victim_bytes;
 
         map.erase(it);
-
-        evicted++;
     }
 
-    return evicted;
+    return freed; // BYTES freed
+}
+
+size_t Shard::scan_expired(size_t limit)
+{
+    std::lock_guard<std::mutex> lock(mtx);
+
+    size_t removed = 0;
+
+    auto now = Clock::now_ms();
+
+    for (auto it = map.begin(); it != map.end() && removed < limit;)
+    {
+        if (it->second.expire_at_ms &&
+            now > it->second.expire_at_ms)
+        {
+            lru.erase(it->second.lru_it);
+
+            bytes_used -= it->second.bytes;
+
+            it = map.erase(it);
+
+            removed++;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    return removed;
 }
