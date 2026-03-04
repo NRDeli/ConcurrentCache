@@ -31,4 +31,7 @@ add_executable(concurrent-cache
     src/util/Metrics.cpp
 )
 
+add_executable(bench tools/bench.cpp)
+
 target_include_directories(concurrent-cache PRIVATE src)
+target_include_directories(bench PRIVATE src)
