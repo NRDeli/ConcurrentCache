@@ -28,6 +28,7 @@ add_executable(concurrent-cache
 
     src/util/Logger.cpp
     src/util/Clock.cpp
+    src/util/Metrics.cpp
 )
 
 target_include_directories(concurrent-cache PRIVATE src)

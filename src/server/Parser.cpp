@@ -40,5 +40,8 @@ Command Parser::parse(const std::string &line)
     if (tokens[0] == "TTL" && tokens.size() >= 2)
         return {CmdType::TTL, tokens[1], ""};
 
+    if (tokens[0] == "STATS")
+        return {CmdType::STATS, "", ""};
+
     return {CmdType::INVALID, "", ""};
 }

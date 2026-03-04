@@ -1,6 +1,7 @@
 #include "Worker.h"
-#include "../util/Logger.h"
 #include "Parser.h"
+#include "../util/Logger.h"
+#include "../util/Metrics.h"
 
 #include <unistd.h>
 #include <vector>
@@ -73,7 +74,7 @@ void Worker::loop()
                     conn.inbuf.erase(0, pos + 1);
 
                     auto cmd = Parser::parse(line);
-
+                    metrics.requests++;
                     switch (cmd.type)
                     {
 
@@ -92,10 +93,12 @@ void Worker::loop()
 
                         if (!cache.get(cmd.key, value))
                         {
+                            metrics.get_misses++;
                             conn.outbuf += "$-1\n";
                         }
                         else
                         {
+                            metrics.get_hits++;
                             conn.outbuf += "$" + std::to_string(value.size()) + "\n";
                             conn.outbuf += value + "\n";
                         }
@@ -120,6 +123,15 @@ void Worker::loop()
                     {
                         int64_t t = cache.ttl(cmd.key);
                         conn.outbuf += ":" + std::to_string(t) + "\n";
+                        break;
+                    }
+
+                    case CmdType::STATS:
+                    {
+                        conn.outbuf += "requests " + std::to_string(metrics.requests.load()) + "\n";
+                        conn.outbuf += "hits " + std::to_string(metrics.get_hits.load()) + "\n";
+                        conn.outbuf += "misses " + std::to_string(metrics.get_misses.load()) + "\n";
+                        conn.outbuf += "evictions " + std::to_string(metrics.evictions.load()) + "\n";
                         break;
                     }
 

@@ -11,6 +11,7 @@ enum class CmdType
     DEL,
     EXPIRE,
     TTL,
+    STATS,
     INVALID
 };
 
