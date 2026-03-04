@@ -1,4 +1,4 @@
-# 🚀 ConcurrentCache
+# ConcurrentCache
 
 ### High-Performance Multi-Threaded In-Memory Cache Server (C++)
 
