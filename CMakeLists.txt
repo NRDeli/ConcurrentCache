@@ -27,6 +27,7 @@ add_executable(concurrent-cache
     src/cache/Shard.cpp
 
     src/util/Logger.cpp
+    src/util/Clock.cpp
 )
 
 target_include_directories(concurrent-cache PRIVATE src)

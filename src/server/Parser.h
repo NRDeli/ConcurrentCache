@@ -9,6 +9,8 @@ enum class CmdType
     SET,
     GET,
     DEL,
+    EXPIRE,
+    TTL,
     INVALID
 };
 

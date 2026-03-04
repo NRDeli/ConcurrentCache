@@ -13,9 +13,13 @@ public:
 
     bool get(const std::string &key, std::string &value);
 
-    void set(const std::string &key, const std::string &value);
+    void set(const std::string &, const std::string &, uint64_t ttl_ms);
 
     bool del(const std::string &key);
+
+    bool expire(const std::string &, uint64_t ttl_ms);
+
+    int64_t ttl(const std::string &);
 
 private:
     std::vector<Shard> shards;

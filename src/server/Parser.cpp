@@ -34,5 +34,11 @@ Command Parser::parse(const std::string &line)
     if (tokens[0] == "DEL" && tokens.size() >= 2)
         return {CmdType::DEL, tokens[1], ""};
 
+    if (tokens[0] == "EXPIRE" && tokens.size() >= 3)
+        return {CmdType::EXPIRE, tokens[1], tokens[2]};
+
+    if (tokens[0] == "TTL" && tokens.size() >= 2)
+        return {CmdType::TTL, tokens[1], ""};
+
     return {CmdType::INVALID, "", ""};
 }

@@ -82,7 +82,7 @@ void Worker::loop()
                         break;
 
                     case CmdType::SET:
-                        cache.set(cmd.key, cmd.value);
+                        cache.set(cmd.key, cmd.value, 0);
                         conn.outbuf += "+OK\n";
                         break;
 
@@ -106,6 +106,20 @@ void Worker::loop()
                     {
                         int removed = cache.del(cmd.key);
                         conn.outbuf += ":" + std::to_string(removed) + "\n";
+                        break;
+                    }
+
+                    case CmdType::EXPIRE:
+                    {
+                        bool ok = cache.expire(cmd.key, std::stoll(cmd.value) * 1000);
+                        conn.outbuf += ":" + std::to_string(ok) + "\n";
+                        break;
+                    }
+
+                    case CmdType::TTL:
+                    {
+                        int64_t t = cache.ttl(cmd.key);
+                        conn.outbuf += ":" + std::to_string(t) + "\n";
                         break;
                     }
 
