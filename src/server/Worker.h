@@ -2,6 +2,7 @@
 
 #include "Reactor.h"
 #include "Connection.h"
+#include "Parser.h"
 
 #include <unordered_map>
 #include <thread>
@@ -23,4 +24,6 @@ private:
 
     std::thread worker_thread;
     std::atomic<bool> running;
+
+    std::unordered_map<std::string, std::string> cache;
 };

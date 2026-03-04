@@ -16,8 +16,14 @@ file(GLOB UTIL_SRC
 
 add_executable(concurrent-cache
     src/main.cpp
-    ${SERVER_SRC}
-    ${UTIL_SRC}
+
+    src/server/TcpServer.cpp
+    src/server/Worker.cpp
+    src/server/Reactor.cpp
+    src/server/Connection.cpp
+    src/server/Parser.cpp
+
+    src/util/Logger.cpp
 )
 
 target_include_directories(concurrent-cache PRIVATE src)

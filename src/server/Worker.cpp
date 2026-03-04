@@ -1,5 +1,6 @@
 #include "Worker.h"
 #include "../util/Logger.h"
+#include "Parser.h"
 
 #include <unistd.h>
 #include <vector>
@@ -57,11 +58,66 @@ void Worker::loop()
                     continue;
                 }
 
-                conn.outbuf.append(buffer, n);
+                conn.inbuf.append(buffer, n);
 
-                write(ev.fd, conn.outbuf.data(), conn.outbuf.size());
+                size_t pos;
 
-                conn.outbuf.clear();
+                while ((pos = conn.inbuf.find('\n')) != std::string::npos)
+                {
+
+                    std::string line = conn.inbuf.substr(0, pos);
+
+                    if (!line.empty() && line.back() == '\r')
+                        line.pop_back();
+
+                    conn.inbuf.erase(0, pos + 1);
+
+                    auto cmd = Parser::parse(line);
+
+                    switch (cmd.type)
+                    {
+
+                    case CmdType::PING:
+                        conn.outbuf += "+PONG\n";
+                        break;
+
+                    case CmdType::SET:
+                        cache[cmd.key] = cmd.value;
+                        conn.outbuf += "+OK\n";
+                        break;
+
+                    case CmdType::GET:
+                    {
+                        auto it = cache.find(cmd.key);
+                        if (it == cache.end())
+                        {
+                            conn.outbuf += "$-1\n";
+                        }
+                        else
+                        {
+                            conn.outbuf += "$" + std::to_string(it->second.size()) + "\n";
+                            conn.outbuf += it->second + "\n";
+                        }
+                        break;
+                    }
+
+                    case CmdType::DEL:
+                    {
+                        int removed = cache.erase(cmd.key);
+                        conn.outbuf += ":" + std::to_string(removed) + "\n";
+                        break;
+                    }
+
+                    default:
+                        conn.outbuf += "-ERR unknown command\n";
+                    }
+                }
+
+                if (!conn.outbuf.empty())
+                {
+                    write(ev.fd, conn.outbuf.data(), conn.outbuf.size());
+                    conn.outbuf.clear();
+                }
             }
         }
     }
