@@ -21,6 +21,10 @@ bool Shard::get(const std::string &key, std::string &value)
 
     value = it->second.value;
 
+    lru.erase(it->second.lru_it);
+    lru.push_front(key);
+    it->second.lru_it = lru.begin();
+
     return true;
 }
 
@@ -36,7 +40,30 @@ void Shard::set(const std::string &key,
     if (ttl_ms > 0)
         expire = Clock::now_ms() + ttl_ms;
 
-    map[key] = Entry{value, expire};
+    size_t bytes = key.size() + value.size();
+
+    auto it = map.find(key);
+
+    if (it != map.end())
+    {
+
+        bytes_used -= it->second.bytes;
+
+        lru.erase(it->second.lru_it);
+    }
+
+    lru.push_front(key);
+
+    Entry e;
+
+    e.value = value;
+    e.expire_at_ms = expire;
+    e.lru_it = lru.begin();
+    e.bytes = bytes;
+
+    map[key] = e;
+
+    bytes_used += bytes;
 }
 
 bool Shard::del(const std::string &key)
@@ -85,4 +112,34 @@ int64_t Shard::ttl(const std::string &key)
     }
 
     return remaining / 1000;
+}
+
+size_t Shard::evict_if_needed(size_t &bytes_over)
+{
+
+    std::lock_guard<std::mutex> lock(mtx);
+
+    size_t evicted = 0;
+
+    while (bytes_over > 0 && !lru.empty())
+    {
+
+        std::string victim = lru.back();
+        lru.pop_back();
+
+        auto it = map.find(victim);
+
+        if (it == map.end())
+            continue;
+
+        bytes_over -= std::min(bytes_over, it->second.bytes);
+
+        bytes_used -= it->second.bytes;
+
+        map.erase(it);
+
+        evicted++;
+    }
+
+    return evicted;
 }

@@ -25,4 +25,8 @@ private:
     std::vector<Shard> shards;
 
     size_t shard_for(const std::string &key);
+
+    size_t max_bytes = 256 * 1024 * 1024;
+
+    size_t total_bytes = 0;
 };

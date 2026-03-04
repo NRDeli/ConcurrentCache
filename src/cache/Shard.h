@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <mutex>
+#include <list>
 
 class Shard
 {
@@ -21,7 +22,14 @@ public:
 
     int64_t ttl(const std::string &key);
 
+    size_t evict_if_needed(size_t &bytes_over);
+
 private:
     std::unordered_map<std::string, Entry> map;
+
+    std::list<std::string> lru;
+
     std::mutex mtx;
+
+    size_t bytes_used = 0;
 };
