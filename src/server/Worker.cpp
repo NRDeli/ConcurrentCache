@@ -82,28 +82,29 @@ void Worker::loop()
                         break;
 
                     case CmdType::SET:
-                        cache[cmd.key] = cmd.value;
+                        cache.set(cmd.key, cmd.value);
                         conn.outbuf += "+OK\n";
                         break;
 
                     case CmdType::GET:
                     {
-                        auto it = cache.find(cmd.key);
-                        if (it == cache.end())
+                        std::string value;
+
+                        if (!cache.get(cmd.key, value))
                         {
                             conn.outbuf += "$-1\n";
                         }
                         else
                         {
-                            conn.outbuf += "$" + std::to_string(it->second.size()) + "\n";
-                            conn.outbuf += it->second + "\n";
+                            conn.outbuf += "$" + std::to_string(value.size()) + "\n";
+                            conn.outbuf += value + "\n";
                         }
                         break;
                     }
 
                     case CmdType::DEL:
                     {
-                        int removed = cache.erase(cmd.key);
+                        int removed = cache.del(cmd.key);
                         conn.outbuf += ":" + std::to_string(removed) + "\n";
                         break;
                     }

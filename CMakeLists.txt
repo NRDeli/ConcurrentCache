@@ -23,6 +23,9 @@ add_executable(concurrent-cache
     src/server/Connection.cpp
     src/server/Parser.cpp
 
+    src/cache/ConcurrentCache.cpp
+    src/cache/Shard.cpp
+
     src/util/Logger.cpp
 )
 
